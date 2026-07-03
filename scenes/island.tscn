@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/island.gd" id="1_island"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/dialogue_box.gd" id="4_dialogue"]
+
+[sub_resource type="Environment" id="env"]
+glow_enabled = true
+glow_intensity = 1.1
+glow_strength = 1.05
+glow_blend_mode = 1
+glow_hdr_threshold = 1.0
+
+[node name="Island" type="Node2D"]
+script = ExtResource("1_island")
+
+[node name="Env" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+
+[node name="Actors" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Player" parent="Actors" instance=ExtResource("2_player")]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3_hud")
+
+[node name="Dialogue" type="CanvasLayer" parent="."]
+script = ExtResource("4_dialogue")

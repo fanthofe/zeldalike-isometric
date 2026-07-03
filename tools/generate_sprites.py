@@ -1,0 +1,592 @@
+#!/usr/bin/env python3
+"""Générateur de sprites pixel art placeholder pour Kaimana.
+
+Style visé : Zelda Minish Cap (contours sombres chauds, couleurs saturées,
+proportions chibi) + palette tropicale avec accents lumineux (glow).
+Régénérer : python3 tools/generate_sprites.py
+"""
+import math
+import random
+from pathlib import Path
+
+from PIL import Image, ImageDraw
+
+OUT = Path(__file__).resolve().parent.parent / "assets" / "sprites"
+OUT.mkdir(parents=True, exist_ok=True)
+
+# ---------------------------------------------------------------- palette
+PAL = {
+    ".": None,
+    "o": (43, 26, 18),      # contour chaud
+    "h": (24, 18, 18),      # cheveux noirs bouclés
+    "H": (58, 44, 42),      # reflet cheveux
+    "s": (185, 119, 70),    # peau
+    "S": (219, 160, 108),   # peau claire
+    "d": (138, 79, 45),     # peau ombre
+    "t": (84, 48, 32),      # tatouage tribal
+    "g": (62, 137, 72),     # pagne feuilles
+    "G": (110, 182, 100),   # feuilles claires
+    "D": (38, 92, 51),      # feuilles sombres
+    "e": (20, 14, 14),      # œil
+    "w": (244, 231, 197),   # ivoire
+    "W": (203, 181, 130),   # ivoire ombre
+    "m": (245, 244, 236),   # blanc (dents / éclat)
+    # kobold
+    "f": (138, 132, 142),   # fourrure grise
+    "F": (176, 168, 178),   # fourrure claire
+    "k": (96, 90, 104),     # fourrure sombre
+    "b": (168, 148, 128),   # ventre / museau
+    "v": (226, 58, 48),     # yeux rouges
+    "n": (30, 24, 30),      # truffe / griffes
+    "c": (139, 90, 52),     # pagne cuir
+    # environnement
+    "T": (122, 74, 43),     # tronc
+    "U": (158, 103, 62),    # tronc clair
+    "L": (47, 158, 79),     # palme
+    "l": (30, 112, 58),     # palme sombre
+    "C": (108, 70, 40),     # noix de coco
+    "A": (160, 95, 50),     # bois totem
+    "a": (110, 62, 34),     # bois totem sombre
+    "Y": (255, 214, 92),    # lueur jaune
+    "R": (120, 113, 100),   # roche
+    "r": (86, 80, 72),      # roche sombre
+    "q": (150, 143, 128),   # roche claire
+}
+
+
+def img_from_map(rows, pal=PAL):
+    w = len(rows[0])
+    for i, r in enumerate(rows):
+        assert len(r) == w, f"ligne {i}: largeur {len(r)} != {w}: {r!r}"
+    im = Image.new("RGBA", (w, len(rows)), (0, 0, 0, 0))
+    px = im.load()
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            col = pal[ch]
+            if col is not None:
+                px[x, y] = (*col, 255)
+    return im
+
+
+def save(im, name):
+    im.save(OUT / f"{name}.png")
+    return im
+
+# ---------------------------------------------------------------- héros
+# 16x24, ancré en bas. Tête chibi volumineuse, torse nu tatoué, pagne.
+
+HERO_HEAD_DOWN = [
+    "....oooooooo....",
+    "..oohhhhhhhhoo..",
+    ".ohhhHHhhhhhhho.",
+    ".ohhHhhhhhhhhho.",
+    "ohhhhhhhhhhhhhho",
+    "ohhohssssssohhho",
+    "ohhosSssssSsohho",
+    ".oohsesssseshoo.",
+    "..ohssssssssho..",
+    "..ohsddssddsho..",
+    "...ohssssssho...",
+]
+HERO_HEAD_UP = [
+    "....oooooooo....",
+    "..oohhhhhhhhoo..",
+    ".ohhhHHhhhhhhho.",
+    ".ohhHhhhhhhhhho.",
+    "ohhhhhhhhhhhhhho",
+    "ohhhhhhhhhhhhhho",
+    "ohhhhhhhhhhhhhho",
+    ".oohhhhhhhhhhoo.",
+    "..ohhhhhhhhhho..",
+    "..ohhhhhhhhhho..",
+    "...ohhhhhhhho...",
+]
+HERO_HEAD_SIDE = [  # regarde à droite
+    "....oooooooo....",
+    "..oohhhhhhhhoo..",
+    ".ohhhHHhhhhhhho.",
+    ".ohhhhhhhhhhhho.",
+    "ohhhhhhhhhhhhhho",
+    "ohhhhhhossssoho.",
+    "ohhhhhosSssseso.",
+    ".oohhhosssssso..",
+    "..ohhhosssdsho..",
+    "..ohhhhosssho...",
+    "...ohhhhossho...",
+]
+
+HERO_BODY_DOWN = [
+    "...ossssssssso..",
+    "..ostssttsstsso.",
+    "..osstsSStssso..",
+    "...oggGggGggo...",
+    "...oDgDggDgDo...",
+]
+HERO_BODY_UP = [
+    "...ossssssssso..",
+    "..osstsstssssso.",
+    "..ossssssssssoo.",
+    "...oggGggGggo...",
+    "...oDgDggDgDo...",
+]
+HERO_BODY_SIDE = [
+    "...osssssssso...",
+    "..oststsSsso....",
+    "..osstsssso.....",
+    "...oggGgggo.....",
+    "...oDgDgDgo.....",
+]
+
+# jambes : 3 variantes (repos, pas gauche, pas droit), 4 lignes
+HERO_LEGS = {
+    0: [
+        "....odo..odo....",
+        "....oso..oso....",
+        "....odo..odo....",
+        "....oo....oo....",
+    ],
+    1: [
+        "....odo..odo....",
+        "....oso..odo....",
+        "....odo...oo....",
+        "....oo..........",
+    ],
+    2: [
+        "....odo..odo....",
+        "....odo..oso....",
+        "....oo...odo....",
+        "..........oo....",
+    ],
+}
+HERO_LEGS_SIDE = {
+    0: [
+        "....odo.odo.....",
+        "....oso.oso.....",
+        "....odo.odo.....",
+        "....oo..oo......",
+    ],
+    1: [
+        "....odo..odo....",
+        "...oso....odo...",
+        "...odo.....oo...",
+        "...oo...........",
+    ],
+    2: [
+        ".....ododo......",
+        ".....osodo......",
+        ".....ododo......",
+        ".....oo.oo......",
+    ],
+}
+
+
+# ------------------------------------------------- composition des frames
+# Chaque frame = calques (tête / torse / jambes) posés avec des décalages,
+# ce qui permet rebond de marche, respiration et poses d'attaque.
+
+def draw_fist(im, cx, cy):
+    """Poing fermé 4x4 (contour + peau claire), dessiné par-dessus le calque."""
+    d = ImageDraw.Draw(im)
+    d.rectangle([cx - 1, cy - 1, cx + 2, cy + 2], fill=(*PAL["o"], 255))
+    d.rectangle([cx, cy, cx + 1, cy + 1], fill=(*PAL["S"], 255))
+
+
+def build_frame(head, body, legs, ys, global_off=(0, 0), head_off=(0, 0), fist_at=None):
+    """Assemble tête/torse/jambes (ancrées aux lignes `ys`) sur un canevas 16x24."""
+    tmp = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    ox, oy = 8, 4
+    gx, gy = global_off
+    for rows, y, (dx, dy) in ((legs, ys[2], (0, 0)), (body, ys[1], (0, 0)), (head, ys[0], head_off)):
+        tmp.alpha_composite(img_from_map(rows), (ox + gx + dx, oy + y + gy + dy))
+    frame = tmp.crop((ox, oy, ox + 16, oy + 24))
+    if fist_at:
+        draw_fist(frame, *fist_at)
+    return frame
+
+
+HERO_YS = (4, 15, 20)
+HERO_HEADS = {"down": HERO_HEAD_DOWN, "up": HERO_HEAD_UP, "side": HERO_HEAD_SIDE}
+HERO_BODIES = {"down": HERO_BODY_DOWN, "up": HERO_BODY_UP, "side": HERO_BODY_SIDE}
+
+# Poses d'attaque : armé (recul, poing levé) puis frappe (fente, poing tendu).
+HERO_ATTACK = {
+    "down": {
+        "windup": dict(global_off=(0, -1), head_off=(1, 0), fist_at=(12, 11)),
+        "strike": dict(global_off=(0, 1), head_off=(0, 1), fist_at=(7, 21)),
+        "push": (0, 1),
+    },
+    "up": {
+        "windup": dict(global_off=(0, 1), head_off=(0, 0), fist_at=(12, 14)),
+        "strike": dict(global_off=(0, -2), head_off=(0, -1), fist_at=(11, 5)),
+        "push": (0, -1),
+    },
+    "side": {
+        "windup": dict(global_off=(-1, 0), head_off=(-1, 0), fist_at=(3, 13)),
+        "strike": dict(global_off=(2, 0), head_off=(1, 0), fist_at=(13, 15)),
+        "push": (1, 0),
+    },
+}
+
+
+def hero_build(direction, legs_i, **kwargs):
+    legs = (HERO_LEGS_SIDE if direction == "side" else HERO_LEGS)[legs_i]
+    return build_frame(HERO_HEADS[direction], HERO_BODIES[direction], legs, HERO_YS, **kwargs)
+
+
+def gen_hero():
+    for d in ("down", "up", "side"):
+        # idle : respiration (la tête s'affaisse d'un pixel)
+        save(hero_build(d, 0), f"hero_idle_{d}_0")
+        save(hero_build(d, 0, head_off=(0, 1)), f"hero_idle_{d}_1")
+        # marche : contact / passage (rebond) / contact / passage
+        walk = [(1, (0, 0)), (0, (0, -1)), (2, (0, 0)), (0, (0, -1))]
+        for i, (legs_i, goff) in enumerate(walk):
+            save(hero_build(d, legs_i, global_off=goff), f"hero_walk_{d}_{i}")
+        # attaque : armé -> frappe -> frappe accentuée -> retour
+        spec = HERO_ATTACK[d]
+        save(hero_build(d, 0, **spec["windup"]), f"hero_attack_{d}_0")
+        save(hero_build(d, 1, **spec["strike"]), f"hero_attack_{d}_1")
+        strike2 = dict(spec["strike"])
+        px, py = spec["push"]
+        gx, gy = strike2["global_off"]
+        strike2["global_off"] = (gx + px, gy + py)
+        save(hero_build(d, 1, **strike2), f"hero_attack_{d}_2")
+        save(hero_build(d, 0), f"hero_attack_{d}_3")
+
+# ---------------------------------------------------------------- crochet
+HOOK = [
+    "....ooo.....",
+    "..oowwwoo...",
+    ".owwwWWwwo..",
+    ".owwoooowwo.",
+    ".owo....owo.",
+    ".owo.....oo.",
+    ".owwo.......",
+    "..owwo......",
+    "...owwo.....",
+    "...oWwo.....",
+    "...oWwo.....",
+    "...oWwo.....",
+    "...owwo.....",
+    "..owWWwo....",
+    "..owwwwo....",
+    "...oooo.....",
+]
+
+
+def gen_hook():
+    save(img_from_map(HOOK), "hook")
+
+# ---------------------------------------------------------------- kobold
+KOBOLD_HEAD_DOWN = [
+    ".oo.........oo..",
+    "ofko........okfo",
+    "ofkfoooooooofkfo",
+    ".offffffffffffo.",
+    ".ofFfffffffFffo.",
+    "..offvffffvffo..",
+    "..offffbbffffo..",
+    "...ofobbbbofo...",
+    "....obnnnnbo....",
+]
+KOBOLD_HEAD_UP = [
+    ".oo.........oo..",
+    "ofko........okfo",
+    "ofkfoooooooofkfo",
+    ".offffffffffffo.",
+    ".ofkfffFfffkffo.",
+    "..offfffffffko..",
+    "..okffffffffko..",
+    "...offffffffo...",
+    "....offffffo....",
+]
+KOBOLD_HEAD_SIDE = [
+    "..oo......oo....",
+    ".ofko....okfo...",
+    ".ofkfoooofkfo...",
+    "..offffffffo....",
+    "..ofFffvfffobo..",
+    "..offffffobbbo..",
+    "...okfffobnnno..",
+    "...offffffoo....",
+    "....offfffo.....",
+]
+KOBOLD_BODY = [
+    "...offffffffo...",
+    "..ofkffffffkfo..",
+    "..offobbbboffo..",
+    "...ofoccccofo...",
+    "...onoccccono...",
+]
+KOBOLD_BODY_SIDE = [
+    "...offfffffo....",
+    "..ofkfffffko....",
+    "..offfobbbfo....",
+    "...ofocccofo....",
+    "...onocccono....",
+]
+KOBOLD_LEGS = {
+    0: [
+        "....oko..oko....",
+        "....ofo..ofo....",
+        "....ono..ono....",
+    ],
+    1: [
+        "....oko..oko....",
+        "....ofo..ono....",
+        "....ono.........",
+    ],
+    2: [
+        "....oko..oko....",
+        "....ono..ofo....",
+        ".........ono....",
+    ],
+}
+
+
+KOBOLD_YS = (7, 16, 21)
+KOBOLD_HEADS = {"down": KOBOLD_HEAD_DOWN, "up": KOBOLD_HEAD_UP, "side": KOBOLD_HEAD_SIDE}
+KOBOLD_BODIES = {"down": KOBOLD_BODY, "up": KOBOLD_BODY, "side": KOBOLD_BODY_SIDE}
+
+
+def kobold_build(direction, legs_i, **kwargs):
+    return build_frame(KOBOLD_HEADS[direction], KOBOLD_BODIES[direction],
+                       KOBOLD_LEGS[legs_i], KOBOLD_YS, **kwargs)
+
+
+def gen_kobold():
+    for d in ("down", "up", "side"):
+        save(kobold_build(d, 0), f"kobold_idle_{d}_0")
+        save(kobold_build(d, 0, global_off=(0, 1)), f"kobold_idle_{d}_1")
+        walk = [(1, (0, 0)), (0, (0, -1)), (2, (0, 0)), (0, (0, -1))]
+        for i, (legs_i, goff) in enumerate(walk):
+            save(kobold_build(d, legs_i, global_off=goff), f"kobold_walk_{d}_{i}")
+
+# ---------------------------------------------------------------- orbes & fx
+
+
+def gen_orb(name, core, mid):
+    im = Image.new("RGBA", (12, 12), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([1, 1, 10, 10], fill=(*mid, 255))
+    d.ellipse([3, 3, 8, 8], fill=(*core, 255))
+    d.ellipse([3, 3, 5, 5], fill=(255, 255, 255, 230))
+    save(im, name)
+
+
+def gen_glow():
+    size = 64
+    im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    px = im.load()
+    c = (size - 1) / 2
+    for y in range(size):
+        for x in range(size):
+            dist = math.hypot(x - c, y - c) / (size / 2)
+            a = max(0.0, 1.0 - dist)
+            px[x, y] = (255, 255, 255, int(255 * a * a))
+    save(im, "glow")
+
+
+def gen_shadow():
+    im = Image.new("RGBA", (16, 6), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([2, 0, 13, 5], fill=(20, 16, 24, 90))
+    save(im, "shadow")
+
+
+def gen_slash():
+    for f in range(2):
+        im = Image.new("RGBA", (24, 24), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        w = 3 if f == 0 else 2
+        col = (255, 255, 230, 220) if f == 0 else (180, 240, 255, 140)
+        d.arc([2, 2, 21, 21], start=-70, end=70, fill=col, width=w)
+        save(im, f"slash_{f}")
+
+
+def gen_puff():
+    for f in range(3):
+        im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        r = 3 + f * 2
+        a = 220 - f * 70
+        for ang in range(0, 360, 90):
+            x = 8 + int(math.cos(math.radians(ang + f * 30)) * f * 2.2)
+            y = 8 + int(math.sin(math.radians(ang + f * 30)) * f * 2.2)
+            d.ellipse([x - r // 2, y - r // 2, x + r // 2, y + r // 2],
+                      fill=(200, 200, 210, a))
+        save(im, f"puff_{f}")
+
+
+HEART = [
+    ".oo.oo.",
+    "oXXoXXo",
+    "oXXXXXo",
+    ".oXXXo.",
+    "..oXo..",
+    "...o...",
+]
+
+
+def gen_hearts():
+    for name, col in [("heart_full", (226, 58, 66)), ("heart_empty", (68, 52, 60))]:
+        pal = dict(PAL)
+        pal["X"] = col
+        save(img_from_map(HEART, pal), name)
+
+# ---------------------------------------------------------------- tuiles
+random.seed(7)
+
+
+def tile(base, speck, n=14, speck2=None):
+    im = Image.new("RGBA", (16, 16), (*base, 255))
+    px = im.load()
+    for _ in range(n):
+        x, y = random.randrange(16), random.randrange(16)
+        px[x, y] = (*speck, 255)
+    if speck2:
+        for _ in range(5):
+            x, y = random.randrange(16), random.randrange(16)
+            px[x, y] = (*speck2, 255)
+    return im
+
+
+def gen_tiles():
+    grass = (88, 172, 82)
+    tiles = {}
+    tiles["grass1"] = tile(grass, (70, 150, 70))
+    tiles["grass2"] = tile(grass, (70, 150, 70), speck2=(255, 130, 160))  # fleurs hibiscus
+    tiles["sand1"] = tile((240, 212, 147), (222, 188, 118))
+    tiles["sand2"] = tile((240, 212, 147), (222, 188, 118), speck2=(252, 240, 210))
+    tiles["path"] = tile((196, 152, 103), (170, 127, 82))
+    # eau : base + vaguelettes
+    water = tile((43, 158, 199), (36, 140, 182), n=8)
+    d = ImageDraw.Draw(water)
+    for y in (4, 11):
+        x0 = random.randrange(4)
+        d.line([x0, y, x0 + 4, y], fill=(150, 226, 240, 255))
+    tiles["water"] = water
+    # écume (bord de plage)
+    foam = tile((43, 158, 199), (36, 140, 182), n=6)
+    d = ImageDraw.Draw(foam)
+    d.line([0, 1, 15, 1], fill=(191, 238, 242, 255))
+    d.line([0, 3, 15, 3], fill=(120, 205, 226, 255))
+    tiles["foam"] = foam
+    # buisson jungle (solide)
+    bush = tile(grass, (70, 150, 70))
+    d = ImageDraw.Draw(bush)
+    d.ellipse([1, 2, 14, 14], fill=(38, 105, 56, 255))
+    d.ellipse([3, 3, 12, 11], fill=(52, 138, 70, 255))
+    d.ellipse([5, 4, 9, 8], fill=(84, 170, 92, 255))
+    tiles["bush"] = bush
+    # falaise / rocher (solide)
+    rock = tile((146, 134, 110), (122, 111, 90), n=12)
+    d = ImageDraw.Draw(rock)
+    d.rectangle([0, 0, 15, 1], fill=(178, 165, 138, 255))
+    d.rectangle([0, 14, 15, 15], fill=(96, 87, 70, 255))
+    for x in (3, 9, 13):
+        d.line([x, 4, x, 10], fill=(118, 107, 86, 255))
+    tiles["cliff"] = rock
+
+    order = ["grass1", "grass2", "sand1", "sand2", "path",
+             "water", "foam", "bush", "cliff"]
+    atlas = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    for i, name in enumerate(order):
+        atlas.paste(tiles[name], ((i % 3) * 16, (i // 3) * 16))
+    save(atlas, "tiles")
+
+# ---------------------------------------------------------------- décors
+PALM = [
+    "......LLLL..............",
+    "...LLLllLLLLL...........",
+    ".LLLlLLLLLlLLLL.........",
+    "LLlLLL.oo.LLLlLLL.......",
+    "LlL...oUTo...LLlLL......",
+    "L....oUTTCo....LlL......",
+    ".....oTTCCo......L......",
+    ".....oUTTo..............",
+    "......oUTo..............",
+    "......oUTo..............",
+    ".......oUTo.............",
+    ".......oUTo.............",
+    "........oUTo............",
+    "........oUTo............",
+    "........oUTTo...........",
+    "........oUTTo...........",
+]
+TOTEM = [
+    "..oooooooooo....",
+    ".oAAAAAAAAAAo...",
+    ".oAaYaAAaYaAo...",
+    ".oAaYaAAaYaAo...",
+    ".oAAAAaaAAAAo...",
+    ".oAaAAAAAAaAo...",
+    ".oAAaaaaaaAAo...",
+    ".oaAAAAAAAAao...",
+    ".oAAaAaaAaAAo...",
+    ".oAAAAAAAAAAo...",
+    ".oAaaAAAAaaAo...",
+    ".oAAAAaaAAAAo...",
+    ".oaAAAAAAAAao...",
+    ".oAAAAAAAAAAo...",
+    "oooAAAAAAAAooo..",
+    "oaaaaaaaaaaaao..",
+]
+ROCK_PROP = [
+    "....oooo........",
+    "..ooqqqRoo......",
+    ".oqqRRRRRRo.....",
+    ".oqRRRRrRRRo....",
+    "oRRRrRRRRrRo....",
+    "oRrRRRRrRRro....",
+    ".orrrrrrrro.....",
+    "..oooooooo......",
+]
+
+
+def gen_props():
+    save(img_from_map(PALM), "palm")
+    save(img_from_map(TOTEM), "totem")
+    save(img_from_map(ROCK_PROP), "rock")
+
+# ---------------------------------------------------------------- preview
+
+
+def preview():
+    names = sorted(p.stem for p in OUT.glob("*.png") if p.stem != "preview")
+    scale = 5
+    cols = 6
+    cell = 40 * scale
+    rows = (len(names) + cols - 1) // cols
+    sheet = Image.new("RGBA", (cols * cell, rows * cell), (40, 44, 52, 255))
+    for i, n in enumerate(names):
+        im = Image.open(OUT / f"{n}.png")
+        im = im.resize((im.width * scale, im.height * scale), Image.NEAREST)
+        x = (i % cols) * cell + (cell - im.width) // 2
+        y = (i // cols) * cell + (cell - im.height) // 2
+        sheet.alpha_composite(im, (max(x, 0), max(y, 0)))
+    sheet.save(OUT / "preview.png")
+
+
+if __name__ == "__main__":
+    # purge des anciennes frames (noms de schéma précédent inclus)
+    for old in list(OUT.glob("hero_*.png")) + list(OUT.glob("kobold_*.png")):
+        old.unlink()
+        imp = old.with_suffix(".png.import")
+        if imp.exists():
+            imp.unlink()
+    gen_hero()
+    gen_hook()
+    gen_kobold()
+    gen_orb("orb_green", (82, 255, 122), (30, 160, 70))
+    gen_orb("orb_red", (255, 92, 82), (170, 40, 36))
+    gen_orb("orb_dim", (150, 150, 150), (90, 90, 95))
+    gen_glow()
+    gen_shadow()
+    gen_slash()
+    gen_puff()
+    gen_hearts()
+    gen_tiles()
+    gen_props()
+    preview()
+    print("OK ->", OUT)

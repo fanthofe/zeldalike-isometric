@@ -1,0 +1,69 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/shadow.png" id="2_shadow"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hook.png" id="3_hook"]
+[ext_resource type="PackedScene" path="res://scenes/orb.tscn" id="4_orb"]
+
+[sub_resource type="RectangleShape2D" id="body_shape"]
+size = Vector2(8, 6)
+
+[sub_resource type="CircleShape2D" id="hit_shape"]
+radius = 8.0
+
+[sub_resource type="RectangleShape2D" id="hurt_shape"]
+size = Vector2(10, 14)
+
+[node name="Player" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
+motion_mode = 1
+script = ExtResource("1_script")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+position = Vector2(0, 6)
+texture = ExtResource("2_shadow")
+
+[node name="Anim" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -6)
+
+[node name="Collision" type="CollisionShape2D" parent="."]
+position = Vector2(0, 3)
+shape = SubResource("body_shape")
+
+[node name="HookPivot" type="Node2D" parent="."]
+visible = false
+position = Vector2(0, -4)
+
+[node name="Hook" type="Sprite2D" parent="HookPivot"]
+position = Vector2(12, 0)
+rotation = 1.5708
+texture = ExtResource("3_hook")
+
+[node name="HitBox" type="Area2D" parent="HookPivot"]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CS" type="CollisionShape2D" parent="HookPivot/HitBox"]
+position = Vector2(12, 0)
+shape = SubResource("hit_shape")
+
+[node name="HurtBox" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CS" type="CollisionShape2D" parent="HurtBox"]
+position = Vector2(0, -3)
+shape = SubResource("hurt_shape")
+
+[node name="OrbGreen" parent="." instance=ExtResource("4_orb")]
+kind = "green"
+
+[node name="OrbRed" parent="." instance=ExtResource("4_orb")]
+kind = "red"
+angle_offset = 3.14159
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0

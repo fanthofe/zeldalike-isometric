@@ -1,0 +1,45 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/kobold.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/shadow.png" id="2_shadow"]
+
+[sub_resource type="RectangleShape2D" id="body_shape"]
+size = Vector2(10, 8)
+
+[sub_resource type="CircleShape2D" id="detect_shape"]
+radius = 70.0
+
+[sub_resource type="CircleShape2D" id="hit_shape"]
+radius = 7.0
+
+[node name="Kobold" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 7
+motion_mode = 1
+script = ExtResource("1_script")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+position = Vector2(0, 6)
+texture = ExtResource("2_shadow")
+
+[node name="Anim" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -6)
+
+[node name="Collision" type="CollisionShape2D" parent="."]
+position = Vector2(0, 3)
+shape = SubResource("body_shape")
+
+[node name="Detect" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CS" type="CollisionShape2D" parent="Detect"]
+shape = SubResource("detect_shape")
+
+[node name="HitBox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CS" type="CollisionShape2D" parent="HitBox"]
+position = Vector2(0, -2)
+shape = SubResource("hit_shape")

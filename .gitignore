@@ -1,0 +1,5 @@
+# Cache d'import Godot
+.godot/
+
+# Python
+__pycache__/
