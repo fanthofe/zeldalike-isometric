@@ -140,6 +140,7 @@ func _die() -> void:
 	state = State.DEAD
 	velocity = Vector2.ZERO
 	FX.puff(get_parent(), global_position)
+	FX.essence_drop(get_parent(), global_position)  # monnaie de l'arbre de compétences
 	if randf() < 0.5:
 		FX.heart_drop(get_parent(), global_position)
 	died.emit()

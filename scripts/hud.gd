@@ -5,6 +5,7 @@ var _hearts: Array[TextureRect] = []
 var _orb_icons := {}
 var _heart_full: Texture2D
 var _heart_empty: Texture2D
+var _essence_label: Label
 
 
 static func _heart_frame(index: int) -> Texture2D:
@@ -45,10 +46,30 @@ func _ready() -> void:
 		orbs_row.add_child(icon)
 		_orb_icons[kind] = icon
 
+	# essence spirituelle ✦ (monnaie de l'arbre de compétences, menu : Tab)
+	var essence_row := HBoxContainer.new()
+	essence_row.add_theme_constant_override("separation", 2)
+	box.add_child(essence_row)
+	var essence_icon := TextureRect.new()
+	essence_icon.texture = load("res://assets/sprites/orb_dim.png")
+	essence_icon.modulate = Color(0.6, 1.4, 1.8)
+	essence_icon.stretch_mode = TextureRect.STRETCH_KEEP
+	essence_row.add_child(essence_icon)
+	_essence_label = Label.new()
+	_essence_label.add_theme_font_size_override("font_size", 8)
+	_essence_label.add_theme_color_override("font_color", Color(0.55, 0.9, 1.0))
+	essence_row.add_child(_essence_label)
+
 	GameState.hp_changed.connect(_on_hp_changed)
 	GameState.spirits_changed.connect(_refresh_orbs)
+	GameState.essence_changed.connect(_on_essence_changed)
 	_on_hp_changed(GameState.hp, GameState.MAX_HP)
 	_refresh_orbs()
+	_on_essence_changed(GameState.essence)
+
+
+func _on_essence_changed(amount: int) -> void:
+	_essence_label.text = "x %d" % amount
 
 
 func _on_hp_changed(hp: int, _max_hp: int) -> void:

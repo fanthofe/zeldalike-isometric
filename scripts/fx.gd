@@ -44,6 +44,33 @@ static func flash(node: CanvasItem, color := Color(3.0, 3.0, 3.0), time := 0.12)
 	tw.tween_property(node, "modulate", Color.WHITE, time)
 
 
+## Mote d'essence spirituelle ✦ lâchée par les ennemis (monnaie de l'arbre).
+static func essence_drop(parent: Node, pos: Vector2) -> void:
+	var area := Area2D.new()
+	area.collision_layer = 0
+	area.collision_mask = 2  # joueur
+	var sprite := Sprite2D.new()
+	sprite.texture = load("res://assets/sprites/glow.png")
+	sprite.scale = Vector2(0.14, 0.14)
+	sprite.modulate = Color(0.9, 1.7, 2.2)  # HDR : mote cyan qui participe au glow
+	area.add_child(sprite)
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 7.0
+	shape.shape = circle
+	area.add_child(shape)
+	area.global_position = pos + Vector2(randf_range(-6.0, 6.0), randf_range(-4.0, 4.0))
+	area.body_entered.connect(func(body: Node2D) -> void:
+		if body.has_method("pickup_essence"):
+			body.pickup_essence()
+			area.queue_free()
+	)
+	parent.add_child(area)
+	var tw := area.create_tween().set_loops()
+	tw.tween_property(sprite, "position:y", -3.0, 0.6).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(sprite, "position:y", 0.0, 0.6).set_trans(Tween.TRANS_SINE)
+
+
 static func heart_drop(parent: Node, pos: Vector2) -> void:
 	var area := Area2D.new()
 	area.collision_layer = 0

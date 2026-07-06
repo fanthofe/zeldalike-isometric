@@ -150,10 +150,11 @@ func _process_attack(delta: float) -> void:
 			_start_roll()
 			return
 	var spec: Dictionary = ATTACKS[_combo_stage]
+	var kb: float = spec.kb * (1.2 if GameState.has_skill("poigne") else 1.0)
 	for body in hitbox.get_overlapping_bodies():
 		if body != self and not _hit_this_swing.has(body) and body.has_method("take_hit"):
 			_hit_this_swing.append(body)
-			body.take_hit(spec.dmg, global_position, spec.kb)
+			body.take_hit(spec.dmg, global_position, kb)
 			if _combo_stage == ATTACKS.size() - 1:
 				_shake_camera()
 	_state_timer -= delta
@@ -161,13 +162,24 @@ func _process_attack(delta: float) -> void:
 		_end_attack()
 
 
+## Dernier coup de combo maîtrisé (arbre de compétences).
+func _max_combo_stage() -> int:
+	if GameState.has_skill("estoc"):
+		return 2
+	if GameState.has_skill("revers"):
+		return 1
+	return 0
+
+
 func _end_attack() -> void:
 	state = State.MOVE
-	if _combo_stage >= ATTACKS.size() - 1:
-		# fin du combo : petite récupération avant de pouvoir refrapper
+	if _combo_stage >= _max_combo_stage():
+		# fin du combo : récupération (pleine après un finisher complet)
+		var full_combo := _combo_stage == ATTACKS.size() - 1
 		_combo_stage = 0
 		_combo_window = 0.0
-		_attack_cd = COMBO_COOLDOWN
+		var cd := COMBO_COOLDOWN if full_combo else 0.15
+		_attack_cd = cd * (0.5 if full_combo and GameState.has_skill("danse") else 1.0)
 		return
 	_combo_stage += 1
 	_combo_window = COMBO_WINDOW
@@ -204,7 +216,7 @@ func _use_green() -> void:
 	if not GameState.green_awake or _heal_cd > 0.0 or GameState.hp >= GameState.MAX_HP:
 		return
 	_heal_cd = HEAL_COOLDOWN
-	GameState.heal(1)
+	GameState.heal(2 if GameState.has_skill("seve") else 1)  # Sève Vive
 	orb_green.pulse()
 	FX.flash(anim, Color(0.6, 2.2, 0.8), 0.3)
 
@@ -224,6 +236,12 @@ func pickup_heart() -> void:
 	GameState.heal(1)
 	Sfx.play("pickup", -10.0)
 	FX.flash(anim, Color(2.0, 1.4, 1.4), 0.2)
+
+
+func pickup_essence() -> void:
+	GameState.add_essence(1)
+	Sfx.play("pickup", -14.0, 1.5)
+	FX.flash(anim, Color(1.2, 1.8, 2.2), 0.2)
 
 
 func take_hit(amount: int, from: Vector2) -> void:

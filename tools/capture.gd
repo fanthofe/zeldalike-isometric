@@ -7,6 +7,9 @@ const OUT_DIR := "/tmp/claude-1000/-home-fariz-Perso-zeldalike-isometric-island/
 
 
 func _ready() -> void:
+	# combo complet débloqué pour que la séquence de test soit représentative
+	GameState.skills["revers"] = true
+	GameState.skills["estoc"] = true
 	var island: Node = load("res://scenes/island.tscn").instantiate()
 	add_child(island)
 	await _wait(40)

@@ -28,6 +28,7 @@ touchés, roulade avec invincibilité, cœurs de vie, ennemis à IA
 | Roulade | C, K ou Espace |
 | Orbe verte (soin, une fois éveillée) | E |
 | Orbe rouge (boule de feu, une fois éveillée) | R |
+| Arbre de compétences | Tab ou M |
 | Dialogue / confirmer | Entrée ou X |
 
 ## Lancer le jeu
@@ -91,6 +92,12 @@ Choix structurants :
   `_ready()` — les `.tscn` ne portent que la structure minimale.
 - Les kobolds sont dans le groupe `"kobolds"` ; l'île compte les morts via le
   signal `died` pour déclencher la séquence de victoire.
+- **Arbre de compétences** (design : `docs/arbre-competences.md`) : définitions
+  dans `skill_tree.gd`, menu pause dans `skill_menu.gd` (Tab/M,
+  `process_mode = ALWAYS` + `get_tree().paused`), essence/déblocages dans
+  `GameState` (les éveils d'esprits sont mappés sur `green_awake`/`red_awake`).
+  Les kobolds lâchent 1 essence à la mort. Compétences non câblées : `impl:
+  false` → « Bientôt disponible » dans le menu.
 
 ## Direction artistique
 

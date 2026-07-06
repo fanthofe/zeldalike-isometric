@@ -298,6 +298,7 @@ func _start_music() -> void:
 	music.stream = load("res://assets/external/ninja/audio/music_sunny.ogg")
 	music.stream.loop = true
 	music.volume_db = -10.0
+	music.process_mode = Node.PROCESS_MODE_ALWAYS  # continue dans le menu pause
 	add_child(music)
 	music.play()
 

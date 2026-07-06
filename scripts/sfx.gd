@@ -9,6 +9,10 @@ const SOUNDS := {
 }
 
 
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS  # sons audibles dans le menu pause
+
+
 func play(sound_name: String, volume_db := -4.0, pitch := 1.0) -> void:
 	var p := AudioStreamPlayer.new()
 	p.stream = load(SOUNDS[sound_name])
