@@ -1,5 +1,11 @@
 # Cache d'import Godot
 .godot/
 
+# Images de référence (droits tiers, usage local uniquement — voir CLAUDE.md)
+assets/reference/
+
+# Cache d'import Godot pour des fichiers hors ressources du jeu (captures README)
+docs/**/*.import
+
 # Python
 __pycache__/

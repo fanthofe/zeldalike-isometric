@@ -87,6 +87,10 @@ var _victory := false
 
 func _ready() -> void:
 	GameState.reset_run()
+	# lumière tropicale : légère teinte dorée sur toute la scène
+	var tint := CanvasModulate.new()
+	tint.color = Color(1.0, 0.98, 0.92)
+	add_child(tint)
 	_build_world()
 	_setup_camera()
 	if not GameState.intro_done:
@@ -130,6 +134,18 @@ func _on_outro_done() -> void:
 
 func _build_world() -> void:
 	ground.tile_set = _build_tileset()
+	var ripples := TileMapLayer.new()
+	ripples.tile_set = ground.tile_set
+	ripples.name = "Ripples"
+	ripples.modulate = Color(1, 1, 1, 0.7)  # ondulations douces, fondues dans l'océan
+	add_child(ripples)
+	move_child(ripples, ground.get_index() + 1)
+	var decor := Node2D.new()
+	decor.name = "Decor"
+	add_child(decor)
+	move_child(decor, ripples.get_index() + 1)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20260706  # décor stable d'une partie à l'autre
 	var width: int = MAP[0].length()
 	for y in range(MAP.size()):
 		var row: String = MAP[y]
@@ -141,6 +157,10 @@ func _build_world() -> void:
 			if not ATLAS.has(ch):
 				ground_ch = "s" if y >= 17 else "."
 			ground.set_cell(Vector2i(x, y), ATLAS[ground_ch][0], ATLAS[ground_ch][1])
+			if ground_ch == "w" and rng.randf() < 0.3:
+				ripples.set_cell(Vector2i(x, y), 2, Vector2i(0, 0))
+			elif ch == "." or ch == ",":
+				_scatter_decor(decor, pos, rng)
 			if PROPS.has(ch):
 				_add_prop(ch, pos + Vector2(0, TILE / 2.0))
 			elif ch == "K":
@@ -158,6 +178,14 @@ func _build_tileset() -> TileSet:
 	# rattacher les sources avant create_tile : les TileData héritent des couches physiques
 	_add_atlas_source(ts, 0, "res://assets/external/ninja/field.png")
 	_add_atlas_source(ts, 1, "res://assets/external/ninja/water.png")
+	_add_atlas_source(ts, 2, "res://assets/external/ninja/water_ripples.png")
+	# tuile d'ondulations animée (4 frames horizontales, sans collision)
+	var ripple_src := ts.get_source(2) as TileSetAtlasSource
+	ripple_src.create_tile(Vector2i(0, 0))
+	ripple_src.set_tile_animation_columns(Vector2i(0, 0), 4)
+	ripple_src.set_tile_animation_frames_count(Vector2i(0, 0), 4)
+	for f in range(4):
+		ripple_src.set_tile_animation_frame_duration(Vector2i(0, 0), f, 0.35)
 	var half := TILE / 2.0
 	for ch: String in ATLAS:
 		var src := ts.get_source(ATLAS[ch][0]) as TileSetAtlasSource
@@ -182,6 +210,35 @@ func _add_atlas_source(ts: TileSet, id: int, path: String) -> void:
 	ts.add_source(src, id)
 
 
+## Petit décor non bloquant dispersé sur l'herbe : touffes, fleurs, marguerite animée.
+const TUFTS := [
+	Rect2(112, 160, 16, 16),  # herbes hautes
+	Rect2(0, 176, 16, 16),    # fleurs jaunes
+	Rect2(48, 160, 16, 16),   # touffe ronde
+]
+
+
+func _scatter_decor(parent: Node2D, pos: Vector2, rng: RandomNumberGenerator) -> void:
+	var roll := rng.randf()
+	if roll < 0.035:
+		# marguerite animée (4 frames qui ondulent)
+		var s := AnimatedSprite2D.new()
+		s.sprite_frames = FX.sheet_anim("res://assets/external/ninja/plant_daisy.png",
+				Vector2i(16, 16), 4, rng.randf_range(3.0, 5.0), true)
+		s.position = pos
+		s.frame = rng.randi_range(0, 3)
+		parent.add_child(s)
+		s.play("anim")
+	elif roll < 0.11:
+		var s := Sprite2D.new()
+		var at := AtlasTexture.new()
+		at.atlas = load(NATURE)
+		at.region = TUFTS[rng.randi_range(0, TUFTS.size() - 1)]
+		s.texture = at
+		s.position = pos
+		parent.add_child(s)
+
+
 func _add_prop(ch: String, base_pos: Vector2) -> void:
 	var def: Array = PROPS[ch]
 	var body := StaticBody2D.new()
@@ -202,6 +259,38 @@ func _add_prop(ch: String, base_pos: Vector2) -> void:
 	body.add_child(shape)
 	body.position = base_pos
 	actors.add_child(body)
+	if ch == "T":
+		_haunt_totem(body, def[1].size.y)
+
+
+## Halo ambré vacillant + lucioles-esprits autour d'un totem.
+func _haunt_totem(totem: Node2D, sprite_height: float) -> void:
+	var light := PointLight2D.new()
+	light.texture = load("res://assets/sprites/glow.png")
+	light.texture_scale = 0.6
+	light.color = Color(1.0, 0.75, 0.4)
+	light.energy = 0.5
+	light.position = Vector2(0, -sprite_height * 0.55)
+	totem.add_child(light)
+	var tw := light.create_tween().set_loops()
+	tw.tween_property(light, "energy", 0.75, 1.1).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(light, "energy", 0.45, 1.3).set_trans(Tween.TRANS_SINE)
+
+	var motes := CPUParticles2D.new()
+	motes.amount = 6
+	motes.lifetime = 4.0
+	motes.preprocess = 4.0
+	motes.texture = load("res://assets/sprites/glow.png")
+	motes.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	motes.emission_rect_extents = Vector2(24, 18)
+	motes.gravity = Vector2.ZERO
+	motes.initial_velocity_min = 2.0
+	motes.initial_velocity_max = 6.0
+	motes.scale_amount_min = 0.04
+	motes.scale_amount_max = 0.09
+	motes.color = Color(1.6, 1.2, 0.5, 0.8)  # HDR : les motes participent au glow
+	motes.position = Vector2(0, -sprite_height * 0.5)
+	totem.add_child(motes)
 
 
 func _start_music() -> void:

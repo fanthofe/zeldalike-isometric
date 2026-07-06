@@ -34,7 +34,7 @@ var _hit_this_swing: Array[Node] = []
 
 
 func _ready() -> void:
-	anim.sprite_frames = SpriteFramesBuilder.build("hero", true)
+	anim.sprite_frames = SpriteFramesBuilder.build("hero", true, 6)
 	anim.play("idle_down")
 	hook_pivot.visible = false
 	GameState.player_died.connect(_die)

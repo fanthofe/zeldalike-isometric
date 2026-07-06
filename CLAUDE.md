@@ -66,10 +66,14 @@ Choix structurants :
   (régions px dans la const `PROPS` d'`island.gd`).
 - **Les `SpriteFrames` sont construits en code** (`sprite_frames_builder.gd`)
   à partir des PNG `<prefix>_<anim>_<dir>_<i>.png` → `idle_<dir>` (2 frames,
-  respiration), `walk_<dir>` (4 frames avec rebond), `attack_<dir>` (4 frames,
+  respiration), `walk_<dir>` (héros : 6 frames — appui/poids/passage des deux
+  côtés avec balancement des bras ; kobold : 4), `attack_<dir>` (4 frames,
   héros : armé → frappe → frappe accentuée → retour), dir ∈ down/up/side
   (side = droite, `flip_h` pour la gauche). Les frames sont composées par
-  calques (tête/torse/jambes + décalages + poing) dans `generate_sprites.py`.
+  calques (tête/torse/jambes + décalages + poing, bras balancés par décalage
+  de colonnes) dans `generate_sprites.py`. Les proportions du héros suivent
+  la référence `assets/reference/sprite-linklike.jpg` (chibi type Minish Cap :
+  tête ≈ 60 % du sprite, yeux 2px, bras détachés du torse).
   Fluidité complétée en code par du **squash & stretch** en tween :
   roulade du héros, ramassé/détente du bond kobold.
 - **Le crochet n'est pas une frame d'animation** : c'est un `Sprite2D` sous
@@ -129,6 +133,12 @@ godot --headless --path . res://scenes/island.tscn --quit-after 300
 # partie automatisée avec captures d'écran (intro → combat → victoire)
 godot --path . res://tools/capture.tscn   # écrit shot_*.png (chemin dans capture.gd)
 ```
+
+Pièges connus des captures : la fenêtre doit rester **visible et non occultée**
+(fenêtre minimisée → Vulkan suspend le rendu → captures figées alors que la
+logique du jeu continue), et la **première exécution après un `--import`** peut
+avoir des à-coups (compilation des pipelines) qui décalent les inputs simulés —
+relancer une seconde fois avant de conclure à un bug.
 
 `tools/capture.gd` simule les entrées (`Input.parse_input_event` /
 `Input.action_press`) : dialogue, déplacement, attaque, mise à mort des kobolds,

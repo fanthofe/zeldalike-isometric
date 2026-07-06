@@ -73,109 +73,134 @@ def save(im, name):
     return im
 
 # ---------------------------------------------------------------- héros
-# 16x24, ancré en bas. Tête chibi volumineuse, torse nu tatoué, pagne.
+# 16x24, ancré en bas. Proportions calquées sur assets/reference/
+# sprite-linklike.jpg : tête ≈ 60 % du sprite, gros yeux sombres 2px bas
+# sur le visage, bras détachés du torse (liseré), petites jambes.
+# Identité Kaimana : afro à festons, collier + boucle d'ivoire, tatouages.
 
 HERO_HEAD_DOWN = [
-    "....oooooooo....",
+    "....oohhhhoo....",
     "..oohhhhhhhhoo..",
-    ".ohhhHHhhhhhhho.",
+    ".ohhhhHHhhhhhho.",
     ".ohhHhhhhhhhhho.",
     "ohhhhhhhhhhhhhho",
-    "ohhohssssssohhho",
-    "ohhosSssssSsohho",
-    ".oohsesssseshoo.",
-    "..ohssssssssho..",
-    "..ohsddssddsho..",
-    "...ohssssssho...",
+    "ohhhhhhhhhhhhhho",
+    "ohhossssssssohho",
+    "ohhosessssesohho",
+    "ohhoseSssSesohho",
+    ".oohssssssshoo..",
+    "...oosssssoo....",
 ]
 HERO_HEAD_UP = [
-    "....oooooooo....",
+    "....oohhhhoo....",
     "..oohhhhhhhhoo..",
-    ".ohhhHHhhhhhhho.",
+    ".ohhhhHHhhhhhho.",
     ".ohhHhhhhhhhhho.",
     "ohhhhhhhhhhhhhho",
     "ohhhhhhhhhhhhhho",
     "ohhhhhhhhhhhhhho",
-    ".oohhhhhhhhhhoo.",
-    "..ohhhhhhhhhho..",
-    "..ohhhhhhhhhho..",
-    "...ohhhhhhhho...",
+    "ohhhhhhhhhhhhhho",
+    "ohhohhhhhhhhohho",
+    ".oohhhhhhhhhoo..",
+    "...oohhhhhoo....",
 ]
 HERO_HEAD_SIDE = [  # regarde à droite
-    "....oooooooo....",
+    "....oohhhhoo....",
     "..oohhhhhhhhoo..",
-    ".ohhhHHhhhhhhho.",
+    ".ohhhhHHhhhhho..",
     ".ohhhhhhhhhhhho.",
-    "ohhhhhhhhhhhhhho",
-    "ohhhhhhossssoho.",
-    "ohhhhhosSssseso.",
-    ".oohhhosssssso..",
-    "..ohhhosssdsho..",
-    "..ohhhhosssho...",
-    "...ohhhhossho...",
+    "ohhhhhhhhhhhhho.",
+    "ohhhhhhhhosssso.",
+    "ohhhhhhhosSseso.",
+    "ohhhhhhhossseso.",
+    ".ohhhhhhossssso.",
+    ".ohhhhhhhsssso..",
+    "..ohhhhhhssoo...",
 ]
 
 HERO_BODY_DOWN = [
-    "...ossssssssso..",
-    "..ostssttsstsso.",
-    "..osstsSStssso..",
-    "...oggGggGggo...",
-    "...oDgDggDgDo...",
+    ".oossssssssssoo.",
+    ".ossowswswsosso.",
+    ".ostossttssosto.",
+    ".ossostsStsosso.",
+    "..oggGggggGgo...",
+    "..oDgDggggDgo...",
 ]
 HERO_BODY_UP = [
-    "...ossssssssso..",
-    "..osstsstssssso.",
-    "..ossssssssssoo.",
-    "...oggGggGggo...",
-    "...oDgDggDgDo...",
+    ".oossssssssssoo.",
+    ".ossossssssosso.",
+    ".ostosttttsosto.",
+    ".ossossssssosso.",
+    "..oggGggggGgo...",
+    "..oDgDggggDgo...",
 ]
 HERO_BODY_SIDE = [
-    "...osssssssso...",
-    "..oststsSsso....",
-    "..osstsssso.....",
-    "...oggGgggo.....",
-    "...oDgDgDgo.....",
+    "...oossssssoo...",
+    "...osssssosso...",
+    "...ostsssosto...",
+    "...osssssosso...",
+    "...ogGgggGgo....",
+    "...oDgDggDgo....",
 ]
 
-# jambes : 3 variantes (repos, pas gauche, pas droit), 4 lignes
+# Colonnes des bras (à décaler pour le balancement de la marche).
+HERO_ARMS = {
+    "down": [(1, 4), (11, 14)],
+    "up": [(1, 4), (11, 14)],
+    "side": [(9, 12)],
+}
+
+# jambes : 0 repos, 1 appui gauche, 2 appui droit, 3 passage (serrées)
 HERO_LEGS = {
     0: [
-        "....odo..odo....",
+        "....oso..oso....",
         "....oso..oso....",
         "....odo..odo....",
-        "....oo....oo....",
+        ".....o....o.....",
     ],
     1: [
-        "....odo..odo....",
-        "....oso..odo....",
-        "....odo...oo....",
-        "....oo..........",
+        "...oso...oso....",
+        "...oso...odo....",
+        "...odo....o.....",
+        "....o...........",
     ],
     2: [
-        "....odo..odo....",
-        "....odo..oso....",
-        "....oo...odo....",
-        "..........oo....",
+        "....oso...oso...",
+        "....odo...oso...",
+        ".....o....odo...",
+        "...........o....",
+    ],
+    3: [
+        "....oso..oso....",
+        "....oso..odo....",
+        "....odo...o.....",
+        ".....o..........",
     ],
 }
 HERO_LEGS_SIDE = {
     0: [
-        "....odo.odo.....",
+        "....oso.oso.....",
         "....oso.oso.....",
         "....odo.odo.....",
-        "....oo..oo......",
+        ".....o...o......",
     ],
     1: [
-        "....odo..odo....",
-        "...oso....odo...",
-        "...odo.....oo...",
-        "...oo...........",
+        "...oso...oso....",
+        "...oso....oso...",
+        "...odo....odo...",
+        "....o......o....",
     ],
     2: [
-        ".....ododo......",
-        ".....osodo......",
-        ".....ododo......",
-        ".....oo.oo......",
+        ".....osooso.....",
+        ".....osoodo.....",
+        ".....odo.o......",
+        "......o.........",
+    ],
+    3: [
+        "....osooso......",
+        "....osooso......",
+        "....ododo.......",
+        ".....o..o.......",
     ],
 }
 
@@ -191,13 +216,32 @@ def draw_fist(im, cx, cy):
     d.rectangle([cx, cy, cx + 1, cy + 1], fill=(*PAL["S"], 255))
 
 
-def build_frame(head, body, legs, ys, global_off=(0, 0), head_off=(0, 0), fist_at=None):
+def shift_columns(im, x0, x1, dy):
+    """Décale verticalement une bande de colonnes (bras qui balancent)."""
+    region = im.crop((x0, 0, x1 + 1, im.height))
+    blank = Image.new("RGBA", region.size, (0, 0, 0, 0))
+    im.paste(blank, (x0, 0))
+    if dy < 0:
+        region = region.crop((0, -dy, region.width, region.height))
+        im.alpha_composite(region, (x0, 0))
+    else:
+        region = region.crop((0, 0, region.width, region.height - dy))
+        im.alpha_composite(region, (x0, dy))
+
+
+def build_frame(head, body, legs, ys, global_off=(0, 0), head_off=(0, 0),
+                fist_at=None, arm_shift=None):
     """Assemble tête/torse/jambes (ancrées aux lignes `ys`) sur un canevas 16x24."""
     tmp = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
     ox, oy = 8, 4
     gx, gy = global_off
-    for rows, y, (dx, dy) in ((legs, ys[2], (0, 0)), (body, ys[1], (0, 0)), (head, ys[0], head_off)):
-        tmp.alpha_composite(img_from_map(rows), (ox + gx + dx, oy + y + gy + dy))
+    body_img = img_from_map(body)
+    if arm_shift:
+        for (x0, x1), dy in arm_shift:
+            shift_columns(body_img, x0, x1, dy)
+    tmp.alpha_composite(img_from_map(legs), (ox + gx, oy + ys[2] + gy))
+    tmp.alpha_composite(body_img, (ox + gx, oy + ys[1] + gy))
+    tmp.alpha_composite(img_from_map(head), (ox + gx + head_off[0], oy + ys[0] + gy + head_off[1]))
     frame = tmp.crop((ox, oy, ox + 16, oy + 24))
     if fist_at:
         draw_fist(frame, *fist_at)
@@ -217,7 +261,7 @@ HERO_ATTACK = {
     },
     "up": {
         "windup": dict(global_off=(0, 1), head_off=(0, 0), fist_at=(12, 14)),
-        "strike": dict(global_off=(0, -2), head_off=(0, -1), fist_at=(11, 5)),
+        "strike": dict(global_off=(0, -2), head_off=(0, 0), fist_at=(11, 5)),
         "push": (0, -1),
     },
     "side": {
@@ -235,13 +279,20 @@ def hero_build(direction, legs_i, **kwargs):
 
 def gen_hero():
     for d in ("down", "up", "side"):
-        # idle : respiration (la tête s'affaisse d'un pixel)
+        arms = HERO_ARMS[d]
+        swing_a = [(span, (1 if i == 0 else -1)) for i, span in enumerate(arms)]
+        swing_b = [(span, -dy) for span, dy in swing_a]
+        relax = [(span, 1) for span in arms]
+        # idle : respiration (tête et épaules s'affaissent d'un pixel)
         save(hero_build(d, 0), f"hero_idle_{d}_0")
-        save(hero_build(d, 0, head_off=(0, 1)), f"hero_idle_{d}_1")
-        # marche : contact / passage (rebond) / contact / passage
-        walk = [(1, (0, 0)), (0, (0, -1)), (2, (0, 0)), (0, (0, -1))]
-        for i, (legs_i, goff) in enumerate(walk):
-            save(hero_build(d, legs_i, global_off=goff), f"hero_walk_{d}_{i}")
+        save(hero_build(d, 0, head_off=(0, 1), arm_shift=relax), f"hero_idle_{d}_1")
+        # marche 6 frames : appui (bras balancés) / poids / passage, des deux côtés
+        walk = [
+            (1, (0, 0), swing_a), (1, (0, 1), swing_a), (3, (0, -1), None),
+            (2, (0, 0), swing_b), (2, (0, 1), swing_b), (3, (0, -1), None),
+        ]
+        for i, (legs_i, goff, arm) in enumerate(walk):
+            save(hero_build(d, legs_i, global_off=goff, arm_shift=arm), f"hero_walk_{d}_{i}")
         # attaque : armé -> frappe -> frappe accentuée -> retour
         spec = HERO_ATTACK[d]
         save(hero_build(d, 0, **spec["windup"]), f"hero_attack_{d}_0")
@@ -278,52 +329,60 @@ def gen_hook():
     save(img_from_map(HOOK), "hook")
 
 # ---------------------------------------------------------------- kobold
+# Kobolds redessinés aux proportions de assets/reference/sprite-linklike.jpg :
+# grosse tête (oreilles hautes, yeux rouges 2px, museau), bras détachés.
 KOBOLD_HEAD_DOWN = [
-    ".oo.........oo..",
+    ".oo..........oo.",
     "ofko........okfo",
-    "ofkfoooooooofkfo",
+    "ofkfo......ofkfo",
+    "offffoooooofffFo",
     ".offffffffffffo.",
-    ".ofFfffffffFffo.",
-    "..offvffffvffo..",
-    "..offffbbffffo..",
-    "...ofobbbbofo...",
-    "....obnnnnbo....",
+    ".ofFffffffffFfo.",
+    ".offvvffffvvffo.",
+    ".offvvffffvvffo.",
+    ".offfffbbffffo..",
+    "..offobbbbofo...",
+    "...obnnnnbo.....",
 ]
 KOBOLD_HEAD_UP = [
-    ".oo.........oo..",
+    ".oo..........oo.",
     "ofko........okfo",
-    "ofkfoooooooofkfo",
+    "ofkfo......ofkfo",
+    "offffoooooofffFo",
     ".offffffffffffo.",
-    ".ofkfffFfffkffo.",
-    "..offfffffffko..",
-    "..okffffffffko..",
-    "...offffffffo...",
-    "....offffffo....",
+    ".ofkffffffffkfo.",
+    ".offffFffFffffo.",
+    ".offffffffffffo.",
+    ".okffffffffffo..",
+    "..offffffffko...",
+    "...offffffo.....",
 ]
 KOBOLD_HEAD_SIDE = [
-    "..oo......oo....",
-    ".ofko....okfo...",
-    ".ofkfoooofkfo...",
-    "..offffffffo....",
-    "..ofFffvfffobo..",
-    "..offffffobbbo..",
-    "...okfffobnnno..",
-    "...offffffoo....",
-    "....offfffo.....",
+    "...oo.....oo....",
+    "..ofko...okfo...",
+    "..ofkfo.ofkfo...",
+    "..offffofffffo..",
+    "...offffffffffo.",
+    "...ofFfvvffffo..",
+    "...offfvvfobbo..",
+    "...okffffobnnno.",
+    "...offffffbbo...",
+    "....offffffo....",
+    ".....offffo.....",
 ]
 KOBOLD_BODY = [
-    "...offffffffo...",
-    "..ofkffffffkfo..",
-    "..offobbbboffo..",
-    "...ofoccccofo...",
+    ".okffffffffffko.",
+    ".offoffbbffoffo.",
+    ".okfofbbbbfofko.",
+    "..offoccccoffo..",
     "...onoccccono...",
 ]
 KOBOLD_BODY_SIDE = [
-    "...offfffffo....",
-    "..ofkfffffko....",
-    "..offfobbbfo....",
-    "...ofocccofo....",
-    "...onocccono....",
+    "...okffffffko...",
+    "...offfbbofffo..",
+    "...okffbbofko...",
+    "....ofocccofo...",
+    "....onocccono...",
 ]
 KOBOLD_LEGS = {
     0: [
@@ -332,19 +391,19 @@ KOBOLD_LEGS = {
         "....ono..ono....",
     ],
     1: [
-        "....oko..oko....",
-        "....ofo..ono....",
-        "....ono.........",
+        "...oko...oko....",
+        "...ofo...ono....",
+        "...ono..........",
     ],
     2: [
-        "....oko..oko....",
-        "....ono..ofo....",
-        ".........ono....",
+        "....oko...oko...",
+        "....ono...ofo...",
+        "..........ono...",
     ],
 }
 
 
-KOBOLD_YS = (7, 16, 21)
+KOBOLD_YS = (5, 16, 21)
 KOBOLD_HEADS = {"down": KOBOLD_HEAD_DOWN, "up": KOBOLD_HEAD_UP, "side": KOBOLD_HEAD_SIDE}
 KOBOLD_BODIES = {"down": KOBOLD_BODY, "up": KOBOLD_BODY, "side": KOBOLD_BODY_SIDE}
 

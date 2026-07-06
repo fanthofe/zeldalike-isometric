@@ -2,12 +2,13 @@ class_name FX
 ## Petits effets visuels créés à la volée (nuage de fumée, éclat, cœur à ramasser).
 
 
-static func _sheet_anim(sheet_path: String, frame_size: Vector2i, count: int, fps: float) -> SpriteFrames:
+static func sheet_anim(sheet_path: String, frame_size: Vector2i, count: int, fps: float,
+		loop := false) -> SpriteFrames:
 	var sheet: Texture2D = load(sheet_path)
 	var sf := SpriteFrames.new()
 	sf.add_animation("anim")
 	sf.set_animation_speed("anim", fps)
-	sf.set_animation_loop("anim", false)
+	sf.set_animation_loop("anim", loop)
 	for i in range(count):
 		var at := AtlasTexture.new()
 		at.atlas = sheet
@@ -18,7 +19,7 @@ static func _sheet_anim(sheet_path: String, frame_size: Vector2i, count: int, fp
 
 static func puff(parent: Node, pos: Vector2) -> void:
 	var s := AnimatedSprite2D.new()
-	s.sprite_frames = _sheet_anim("res://assets/external/ninja/smoke.png", Vector2i(32, 32), 6, 16.0)
+	s.sprite_frames = sheet_anim("res://assets/external/ninja/smoke.png", Vector2i(32, 32), 6, 16.0)
 	s.global_position = pos
 	parent.add_child(s)
 	s.play("anim")
@@ -27,7 +28,7 @@ static func puff(parent: Node, pos: Vector2) -> void:
 
 static func slash(parent: Node, pos: Vector2, rot: float) -> void:
 	var s := AnimatedSprite2D.new()
-	s.sprite_frames = _sheet_anim("res://assets/external/ninja/slash.png", Vector2i(26, 32), 5, 28.0)
+	s.sprite_frames = sheet_anim("res://assets/external/ninja/slash.png", Vector2i(26, 32), 5, 28.0)
 	s.global_position = pos
 	s.rotation = rot
 	parent.add_child(s)

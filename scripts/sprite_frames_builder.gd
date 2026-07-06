@@ -7,11 +7,11 @@ class_name SpriteFramesBuilder
 const DIRS := ["down", "up", "side"]
 
 
-static func build(prefix: String, with_attack := false) -> SpriteFrames:
+static func build(prefix: String, with_attack := false, walk_frames := 4) -> SpriteFrames:
 	var sf := SpriteFrames.new()
 	for dir in DIRS:
 		_add_anim(sf, prefix, "idle", dir, 2, 2.0, true)
-		_add_anim(sf, prefix, "walk", dir, 4, 10.0, true)
+		_add_anim(sf, prefix, "walk", dir, walk_frames, 2.4 * walk_frames, true)
 		if with_attack:
 			_add_anim(sf, prefix, "attack", dir, 4, 18.0, false)
 	sf.remove_animation("default")
