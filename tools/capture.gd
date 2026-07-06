@@ -21,8 +21,13 @@ func _ready() -> void:
 	Input.action_press("move_up")
 	await _wait(150)
 	Input.action_release("move_up")
+	# combo complet : 3 appuis (le buffer enchaîne les coups)
 	_press("attack")
-	await _wait(6)
+	await _wait(8)
+	_press("attack")
+	await _wait(8)
+	_press("attack")
+	await _wait(14)  # en plein estoc (finisher)
 	_shot("shot_3_combat.png")
 	# élimine tous les kobolds pour vérifier la séquence de victoire
 	for k in get_tree().get_nodes_in_group("kobolds"):

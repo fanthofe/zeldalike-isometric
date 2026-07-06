@@ -8,12 +8,24 @@ enum State { MOVE, ATTACK, ROLL, HURT, DEAD }
 const SPEED := 72.0
 const ROLL_SPEED := 150.0
 const ROLL_TIME := 0.28
-const ATTACK_TIME := 0.22
 const HURT_TIME := 0.25
 const HEAL_COOLDOWN := 6.0
 const FIREBALL_COOLDOWN := 0.8
 
 const FIREBALL_SCENE := "res://scenes/fireball.tscn"
+
+## Combo de 3 coups : balayage → revers → estoc (finisher).
+## swing = [angle départ, angle arrivée] relatif au regard ; null = estoc.
+const ATTACKS := [
+	{"anim": "attack", "time": 0.22, "dmg": 1, "lunge": 55.0,
+		"swing": [-1.3, 1.4], "pitch": 1.0, "kb": 170.0},
+	{"anim": "attack2", "time": 0.22, "dmg": 1, "lunge": 75.0,
+		"swing": [1.4, -1.3], "pitch": 1.15, "kb": 170.0},
+	{"anim": "attack3", "time": 0.30, "dmg": 2, "lunge": 120.0,
+		"swing": null, "pitch": 0.85, "kb": 280.0},
+]
+const COMBO_WINDOW := 0.35    # délai pour enchaîner après la fin d'un coup
+const COMBO_COOLDOWN := 0.35  # récupération après le finisher
 
 var state := State.MOVE
 var facing := Vector2.DOWN
@@ -25,10 +37,16 @@ var _heal_cd := 0.0
 var _fire_cd := 0.0
 var _knockback := Vector2.ZERO
 var _hit_this_swing: Array[Node] = []
+var _combo_stage := 0         # coup en cours / prochain coup à jouer
+var _combo_window := 0.0
+var _attack_cd := 0.0
+var _attack_buffered := false
 
 @onready var anim: AnimatedSprite2D = $Anim
 @onready var hook_pivot: Node2D = $HookPivot
+@onready var hook_sprite: Sprite2D = $HookPivot/Hook
 @onready var hitbox: Area2D = $HookPivot/HitBox
+@onready var camera: Camera2D = $Camera2D
 @onready var orb_green: Node2D = $OrbGreen
 @onready var orb_red: Node2D = $OrbRed
 
@@ -44,6 +62,11 @@ func _physics_process(delta: float) -> void:
 	_iframes = maxf(_iframes - delta, 0.0)
 	_heal_cd = maxf(_heal_cd - delta, 0.0)
 	_fire_cd = maxf(_fire_cd - delta, 0.0)
+	_attack_cd = maxf(_attack_cd - delta, 0.0)
+	if state != State.ATTACK:
+		_combo_window = maxf(_combo_window - delta, 0.0)
+		if _combo_window == 0.0:
+			_combo_stage = 0  # fenêtre expirée : le combo repart du premier coup
 
 	match state:
 		State.MOVE:
@@ -75,7 +98,9 @@ func _process_move(delta: float) -> void:
 
 	if not controls_enabled or GameState.dialogue_active:
 		return
-	if Input.is_action_just_pressed("attack"):
+	if Input.is_action_just_pressed("attack") and _attack_cd <= 0.0:
+		if _combo_window <= 0.0:
+			_combo_stage = 0
 		_start_attack()
 	elif Input.is_action_just_pressed("roll"):
 		_start_roll()
@@ -86,30 +111,76 @@ func _process_move(delta: float) -> void:
 
 
 func _start_attack() -> void:
+	var spec: Dictionary = ATTACKS[_combo_stage]
 	state = State.ATTACK
-	_state_timer = ATTACK_TIME
+	_state_timer = spec.time
 	_hit_this_swing.clear()
-	velocity = facing * 40.0
-	anim.play("attack_" + _facing_name())
+	_attack_buffered = false
+	velocity = facing * spec.lunge
+	anim.play(spec.anim + "_" + _facing_name())
 	hook_pivot.visible = true
 	var base := facing.angle()
-	hook_pivot.rotation = base - 1.3
 	var tw := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(hook_pivot, "rotation", base + 1.4, ATTACK_TIME)
+	if spec.swing == null:
+		# estoc : le crochet jaillit devant puis revient
+		hook_pivot.rotation = base
+		hook_sprite.position = Vector2(5, 0)
+		tw.tween_property(hook_sprite, "position:x", 18.0, spec.time * 0.45)
+		tw.tween_property(hook_sprite, "position:x", 12.0, spec.time * 0.55)
+	else:
+		hook_sprite.position = Vector2(12, 0)
+		hook_pivot.rotation = base + spec.swing[0]
+		tw.tween_property(hook_pivot, "rotation", base + spec.swing[1], spec.time)
 	tw.tween_callback(func() -> void: hook_pivot.visible = false)
-	Sfx.play("slash")
-	FX.slash(get_parent(), global_position + facing * 14.0 + Vector2(0, -4), base + PI / 2.0)
+	Sfx.play("slash", -4.0, spec.pitch)
+	FX.slash(get_parent(), global_position + facing * 14.0 + Vector2(0, -4),
+			base + PI / 2.0, _combo_stage == 1, 1.0 if _combo_stage < 2 else 1.4)
 
 
 func _process_attack(delta: float) -> void:
-	velocity = velocity.move_toward(Vector2.ZERO, 300.0 * delta)
+	velocity = velocity.move_toward(Vector2.ZERO, 400.0 * delta)
+	if controls_enabled and not GameState.dialogue_active:
+		if Input.is_action_just_pressed("attack"):
+			_attack_buffered = true  # mise en file du coup suivant : enchaînement fluide
+		elif Input.is_action_just_pressed("roll"):
+			# la roulade annule le combo (réactivité défensive)
+			hook_pivot.visible = false
+			_combo_stage = 0
+			_combo_window = 0.0
+			_start_roll()
+			return
+	var spec: Dictionary = ATTACKS[_combo_stage]
 	for body in hitbox.get_overlapping_bodies():
 		if body != self and not _hit_this_swing.has(body) and body.has_method("take_hit"):
 			_hit_this_swing.append(body)
-			body.take_hit(1, global_position)
+			body.take_hit(spec.dmg, global_position, spec.kb)
+			if _combo_stage == ATTACKS.size() - 1:
+				_shake_camera()
 	_state_timer -= delta
 	if _state_timer <= 0.0:
-		state = State.MOVE
+		_end_attack()
+
+
+func _end_attack() -> void:
+	state = State.MOVE
+	if _combo_stage >= ATTACKS.size() - 1:
+		# fin du combo : petite récupération avant de pouvoir refrapper
+		_combo_stage = 0
+		_combo_window = 0.0
+		_attack_cd = COMBO_COOLDOWN
+		return
+	_combo_stage += 1
+	_combo_window = COMBO_WINDOW
+	if _attack_buffered:
+		_start_attack()
+
+
+func _shake_camera() -> void:
+	var tw := create_tween()
+	for i in range(3):
+		tw.tween_property(camera, "offset",
+				Vector2(randf_range(-2.0, 2.0), randf_range(-2.0, 2.0)), 0.03)
+	tw.tween_property(camera, "offset", Vector2.ZERO, 0.05)
 
 
 func _start_roll() -> void:

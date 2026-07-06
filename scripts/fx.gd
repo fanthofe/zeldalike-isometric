@@ -26,11 +26,13 @@ static func puff(parent: Node, pos: Vector2) -> void:
 	s.animation_finished.connect(s.queue_free)
 
 
-static func slash(parent: Node, pos: Vector2, rot: float) -> void:
+static func slash(parent: Node, pos: Vector2, rot: float, reverse := false, size := 1.0) -> void:
 	var s := AnimatedSprite2D.new()
 	s.sprite_frames = sheet_anim("res://assets/external/ninja/slash.png", Vector2i(26, 32), 5, 28.0)
 	s.global_position = pos
 	s.rotation = rot
+	s.flip_v = reverse           # revers du combo : arc inversé
+	s.scale = Vector2(size, size)  # finisher : traînée élargie
 	parent.add_child(s)
 	s.play("anim")
 	s.animation_finished.connect(s.queue_free)

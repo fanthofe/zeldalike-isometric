@@ -13,8 +13,10 @@ projectile) — sont éteintes. À son arrivée, il est attaqué par des **kobol
 Après les avoir repoussés, l'orbe verte frémit : les esprits sont retenus
 prisonniers par les totems de l'île.
 
-**Boucle de gameplay** (à la Minish Cap) : déplacement 8 directions, attaque au
-crochet en arc, roulade avec invincibilité, cœurs de vie, ennemis à IA
+**Boucle de gameplay** (à la Minish Cap) : déplacement 8 directions, **combo
+d'attaques à 3 coups** (balayage → revers → estoc finisher à dégâts doublés)
+avec buffer d'input et annulation par roulade, hitstop de 0,1 s sur les ennemis
+touchés, roulade avec invincibilité, cœurs de vie, ennemis à IA
 (errance → poursuite → charge), pouvoirs d'orbes à débloquer.
 
 ## Commandes
@@ -69,8 +71,11 @@ Choix structurants :
   respiration), `walk_<dir>` (héros : 6 frames — appui/poids/passage des deux
   côtés avec balancement des bras ; kobold : 4), `attack_<dir>` (4 frames,
   héros : armé → frappe → frappe accentuée → retour), dir ∈ down/up/side
-  (side = droite, `flip_h` pour la gauche). Les frames sont composées par
-  calques (tête/torse/jambes + décalages + poing, bras balancés par décalage
+  (side = droite, `flip_h` pour la gauche). Le combo ajoute `attack2_<dir>`
+  (revers) et `attack3_<dir>` (estoc, 14 fps) — poses dans `HERO_ATTACK_ANIMS`
+  du générateur ; la config des coups (dégâts, fente, arc du crochet, pitch)
+  est la const `ATTACKS` de `player.gd`. Les frames sont composées par
+  calques (tête/torse/jambes + décalages + poings, bras balancés par décalage
   de colonnes) dans `generate_sprites.py`. Les proportions du héros suivent
   la référence `assets/reference/sprite-linklike.jpg` (chibi type Minish Cap :
   tête ≈ 60 % du sprite, yeux 2px, bras détachés du torse).

@@ -13,9 +13,12 @@ const WINDUP_TIME := 0.35
 const LUNGE_TIME := 0.28
 const HURT_TIME := 0.22
 
+const HITSTOP_TIME := 0.1  # gel à l'impact : lisibilité du coup
+
 var hp := 3
 var state := State.WANDER
 var _state_timer := 0.0
+var _hitstop := 0.0
 var _wander_dir := Vector2.ZERO
 var _knockback := Vector2.ZERO
 var _lunge_dir := Vector2.ZERO
@@ -36,6 +39,13 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	if _hitstop > 0.0:
+		# hitstop : figé net (animation comprise) pendant l'encaissement
+		_hitstop -= delta
+		velocity = Vector2.ZERO
+		anim.speed_scale = 0.0
+		return
+	anim.speed_scale = 1.0
 	if GameState.dialogue_active:
 		velocity = Vector2.ZERO
 		move_and_slide()
@@ -112,15 +122,16 @@ func _deal_contact_damage() -> void:
 			owner_node.take_hit(1, global_position)
 
 
-func take_hit(amount: int, from: Vector2) -> void:
+func take_hit(amount: int, from: Vector2, kb_strength := 170.0) -> void:
 	if state == State.DEAD:
 		return
 	hp -= amount
 	state = State.HURT
+	_hitstop = HITSTOP_TIME
 	_state_timer = HURT_TIME
-	_knockback = (global_position - from).normalized() * 170.0
+	_knockback = (global_position - from).normalized() * kb_strength
 	Sfx.play("hit", -8.0)
-	FX.flash(anim, Color(3.0, 1.0, 1.0), 0.15)
+	FX.flash(anim, Color(3.0, 1.0, 1.0), 0.15 + HITSTOP_TIME)
 	if hp <= 0:
 		_die()
 

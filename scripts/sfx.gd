@@ -9,10 +9,11 @@ const SOUNDS := {
 }
 
 
-func play(sound_name: String, volume_db := -4.0) -> void:
+func play(sound_name: String, volume_db := -4.0, pitch := 1.0) -> void:
 	var p := AudioStreamPlayer.new()
 	p.stream = load(SOUNDS[sound_name])
 	p.volume_db = volume_db
+	p.pitch_scale = pitch
 	p.finished.connect(p.queue_free)
 	add_child(p)
 	p.play()

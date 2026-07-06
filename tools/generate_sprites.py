@@ -231,7 +231,10 @@ def shift_columns(im, x0, x1, dy):
 
 def build_frame(head, body, legs, ys, global_off=(0, 0), head_off=(0, 0),
                 fist_at=None, arm_shift=None):
-    """Assemble tête/torse/jambes (ancrées aux lignes `ys`) sur un canevas 16x24."""
+    """Assemble tête/torse/jambes (ancrées aux lignes `ys`) sur un canevas 16x24.
+
+    `fist_at` : un (x, y) ou une liste de (x, y) — poings dessinés par-dessus.
+    """
     tmp = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
     ox, oy = 8, 4
     gx, gy = global_off
@@ -244,7 +247,9 @@ def build_frame(head, body, legs, ys, global_off=(0, 0), head_off=(0, 0),
     tmp.alpha_composite(img_from_map(head), (ox + gx + head_off[0], oy + ys[0] + gy + head_off[1]))
     frame = tmp.crop((ox, oy, ox + 16, oy + 24))
     if fist_at:
-        draw_fist(frame, *fist_at)
+        fists = fist_at if isinstance(fist_at[0], (list, tuple)) else [fist_at]
+        for fx, fy in fists:
+            draw_fist(frame, fx, fy)
     return frame
 
 
@@ -252,22 +257,71 @@ HERO_YS = (4, 15, 20)
 HERO_HEADS = {"down": HERO_HEAD_DOWN, "up": HERO_HEAD_UP, "side": HERO_HEAD_SIDE}
 HERO_BODIES = {"down": HERO_BODY_DOWN, "up": HERO_BODY_UP, "side": HERO_BODY_SIDE}
 
-# Poses d'attaque : armé (recul, poing levé) puis frappe (fente, poing tendu).
-HERO_ATTACK = {
-    "down": {
-        "windup": dict(global_off=(0, -1), head_off=(1, 0), fist_at=(12, 11)),
-        "strike": dict(global_off=(0, 1), head_off=(0, 1), fist_at=(7, 21)),
-        "push": (0, 1),
+# Combo d'attaques : 3 coups aux poses distinctes, 4 frames chacun
+# (armé → frappe → frappe accentuée → retour). Chaque frame = (jambes, kwargs).
+# attack  : balayage      — poing dominant, torsion du buste
+# attack2 : revers        — poing opposé, torsion inverse
+# attack3 : estoc (final) — grand recul puis fente à deux poings
+HERO_ATTACK_ANIMS = {
+    "attack": {
+        "down": [
+            (0, dict(global_off=(0, -1), head_off=(1, 0), fist_at=(12, 11))),
+            (1, dict(global_off=(0, 1), head_off=(0, 1), fist_at=(7, 21))),
+            (1, dict(global_off=(0, 2), head_off=(0, 1), fist_at=(7, 22))),
+            (0, dict()),
+        ],
+        "up": [
+            (0, dict(global_off=(0, 1), fist_at=(12, 14))),
+            (1, dict(global_off=(0, -2), fist_at=(11, 5))),
+            (1, dict(global_off=(0, -3), fist_at=(11, 4))),
+            (0, dict()),
+        ],
+        "side": [
+            (0, dict(global_off=(-1, 0), head_off=(-1, 0), fist_at=(3, 13))),
+            (1, dict(global_off=(2, 0), head_off=(1, 0), fist_at=(13, 15))),
+            (1, dict(global_off=(3, 0), head_off=(1, 0), fist_at=(13, 15))),
+            (0, dict()),
+        ],
     },
-    "up": {
-        "windup": dict(global_off=(0, 1), head_off=(0, 0), fist_at=(12, 14)),
-        "strike": dict(global_off=(0, -2), head_off=(0, 0), fist_at=(11, 5)),
-        "push": (0, -1),
+    "attack2": {
+        "down": [
+            (0, dict(global_off=(0, -1), head_off=(-1, 0), fist_at=(3, 11))),
+            (2, dict(global_off=(0, 1), head_off=(0, 1), fist_at=(8, 21))),
+            (2, dict(global_off=(0, 2), head_off=(0, 1), fist_at=(8, 22))),
+            (0, dict()),
+        ],
+        "up": [
+            (0, dict(global_off=(0, 1), fist_at=(3, 14))),
+            (2, dict(global_off=(0, -2), fist_at=(4, 5))),
+            (2, dict(global_off=(0, -3), fist_at=(4, 4))),
+            (0, dict()),
+        ],
+        "side": [
+            (0, dict(global_off=(0, -1), fist_at=(13, 10))),
+            (2, dict(global_off=(2, 0), head_off=(1, 0), fist_at=(13, 17))),
+            (2, dict(global_off=(3, 0), head_off=(1, 0), fist_at=(13, 18))),
+            (0, dict()),
+        ],
     },
-    "side": {
-        "windup": dict(global_off=(-1, 0), head_off=(-1, 0), fist_at=(3, 13)),
-        "strike": dict(global_off=(2, 0), head_off=(1, 0), fist_at=(13, 15)),
-        "push": (1, 0),
+    "attack3": {
+        "down": [
+            (0, dict(global_off=(0, -2), head_off=(1, 0), fist_at=(12, 10))),
+            (1, dict(global_off=(0, 1), head_off=(0, 2), fist_at=[(5, 21), (10, 21)])),
+            (2, dict(global_off=(0, 2), head_off=(0, 2), fist_at=[(5, 22), (10, 22)])),
+            (0, dict()),
+        ],
+        "up": [
+            (0, dict(global_off=(0, 2), fist_at=(3, 15))),
+            (1, dict(global_off=(0, -2), fist_at=[(5, 4), (10, 4)])),
+            (2, dict(global_off=(0, -3), fist_at=[(5, 3), (10, 3)])),
+            (0, dict()),
+        ],
+        "side": [
+            (0, dict(global_off=(-2, 0), head_off=(-1, 0), fist_at=(2, 12))),
+            (1, dict(global_off=(2, 0), head_off=(1, 0), fist_at=[(13, 13), (13, 16)])),
+            (2, dict(global_off=(2, 0), head_off=(1, 0), fist_at=[(13, 13), (13, 16)])),
+            (0, dict()),
+        ],
     },
 }
 
@@ -293,16 +347,10 @@ def gen_hero():
         ]
         for i, (legs_i, goff, arm) in enumerate(walk):
             save(hero_build(d, legs_i, global_off=goff, arm_shift=arm), f"hero_walk_{d}_{i}")
-        # attaque : armé -> frappe -> frappe accentuée -> retour
-        spec = HERO_ATTACK[d]
-        save(hero_build(d, 0, **spec["windup"]), f"hero_attack_{d}_0")
-        save(hero_build(d, 1, **spec["strike"]), f"hero_attack_{d}_1")
-        strike2 = dict(spec["strike"])
-        px, py = spec["push"]
-        gx, gy = strike2["global_off"]
-        strike2["global_off"] = (gx + px, gy + py)
-        save(hero_build(d, 1, **strike2), f"hero_attack_{d}_2")
-        save(hero_build(d, 0), f"hero_attack_{d}_3")
+        # combo : 3 attaques distinctes de 4 frames chacune
+        for anim_name, dirs in HERO_ATTACK_ANIMS.items():
+            for i, (legs_i, kwargs) in enumerate(dirs[d]):
+                save(hero_build(d, legs_i, **kwargs), f"hero_{anim_name}_{d}_{i}")
 
 # ---------------------------------------------------------------- crochet
 HOOK = [

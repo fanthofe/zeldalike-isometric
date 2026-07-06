@@ -13,7 +13,10 @@ static func build(prefix: String, with_attack := false, walk_frames := 4) -> Spr
 		_add_anim(sf, prefix, "idle", dir, 2, 2.0, true)
 		_add_anim(sf, prefix, "walk", dir, walk_frames, 2.4 * walk_frames, true)
 		if with_attack:
+			# combo : balayage / revers / estoc (le finisher est un peu plus lent)
 			_add_anim(sf, prefix, "attack", dir, 4, 18.0, false)
+			_add_anim(sf, prefix, "attack2", dir, 4, 18.0, false)
+			_add_anim(sf, prefix, "attack3", dir, 4, 14.0, false)
 	sf.remove_animation("default")
 	return sf
 
